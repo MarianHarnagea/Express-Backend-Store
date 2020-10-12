@@ -5,10 +5,13 @@ const { Storage } = require("@google-cloud/storage");
 const path = require("path");
 const multer = require("multer");
 const fs = require("fs");
+// const auth = require("../middleware/authToken");
+const authorized = require("../middleware/authorized");
 
-//  /products
-//  Public
-//  GET all products
+// http://localhost:5000/products
+// POST
+// PUBLIC
+// GET ALL PRODUCTS
 
 router.get("/", (req, res) => {
   Product.find()
@@ -19,9 +22,10 @@ router.get("/", (req, res) => {
     });
 });
 
-//  /products/:id
-//  Public
-//  GET single product
+// http://localhost:5000//products:ID
+// POST
+// PUBLIC
+// GET SINGLE PRODUCTS
 
 router.get("/:id", (req, res) => {
   let id = req.params.id;
@@ -69,11 +73,12 @@ const upload = multer({
   },
 }).single("image");
 
-//  /products
-//  Private
-//  POST product
+// http://localhost:5000/products
+// POST
+// PRIVATE
+// CREATE PRODUCTS
 
-router.post("/", (req, res) => {
+router.post("/", authorized, (req, res) => {
   upload(req, res, (err) => {
     if (err) {
       res.json({
@@ -153,12 +158,13 @@ const carouselUpload = multer({
   },
 }).single("carousel_image");
 
-//  /products/:id
-//  Private
-//  ADD Product Carousel Image
-// formdata - carousel_image
+// http://localhost:5000/products/:ID
+// PUT
+// PRIVATE
+// ADD CAROUSEL IMAGES TO PRODUCT
+// FORM-DATA - (image field name - carousel_image)
 
-router.put("/:id", (req, res) => {
+router.put("/:id", authorized, (req, res) => {
   carouselUpload(req, res, (err) => {
     if (err) {
       res.json({
@@ -216,25 +222,25 @@ router.put("/:id", (req, res) => {
   });
 });
 
-//  /products/product/:id
-//  Private
-//  PUT Edit Product
-//  form-data - image
+// http://localhost:5000/products/product/:ID
+// PUT
+// PRIVATE
+// EDIT PRODUCT IMAGE
+// FORM-DATA - (image field name - image)
 
-router.put("/product/:id", (req, res) => {
+router.put("/product/image/:id", authorized, (req, res) => {
   upload(req, res, (err) => {
     if (err) {
-      res.json({
+      res.status(400).json({
         msg: err,
       });
     } else {
       if (req.file == undefined) {
-        res.json({
+        res.status(400).json({
           msg: "Error: No File Selected!",
         });
       } else {
         let id = req.params.id;
-        let body = req.body;
 
         const storage = new Storage({
           keyFilename: path.join(
@@ -268,10 +274,6 @@ router.put("/product/:id", (req, res) => {
             });
 
             Product.findByIdAndUpdate(id, {
-              title: req.body.title,
-              description: req.body.description,
-              price: req.body.price,
-              category: req.body.category,
               product_image: imageCloudPath,
               gc_image_name: req.file.filename,
             })
@@ -294,11 +296,34 @@ router.put("/product/:id", (req, res) => {
   });
 });
 
-//  /products/:id
-//  Private
-//  DELETE Product and GC Image
+// http://localhost:5000/products/product/:ID
+// PUT
+// PRIVATE
+// EDIT PRODUCT INFO
 
-router.delete("/:id", (req, res) => {
+router.put("/product/info/:id", authorized, (req, res) => {
+  let id = req.params.id;
+  Product.findByIdAndUpdate(id, {
+    title: req.body.title,
+    description: req.body.description,
+    price: req.body.price,
+    category: req.body.category,
+  })
+    .then((result) => {
+      res.json(result);
+    })
+    .catch((err) => {
+      console.log(err);
+      res.json(err);
+    });
+});
+
+// http://localhost:5000/products/:ID
+// DELETE
+// PRIVATE
+// DELETE PRODUCT AND GC IMAGE
+
+router.delete("/:id", authorized, (req, res) => {
   const id = req.params.id;
   Product.findByIdAndDelete(id)
     .then((product) => {
@@ -327,9 +352,10 @@ router.delete("/:id", (req, res) => {
     });
 });
 
-//  /products/comment/:id
-//  Private
-//  PUT add product comment
+// http://localhost:5000/products/comment/:id
+// PUT
+// PRIVATE
+// ADD COMMENT TO PRODUCT
 
 router.put("/comment/:id", (req, res) => {
   let id = req.params.id;
@@ -345,9 +371,10 @@ router.put("/comment/:id", (req, res) => {
     });
 });
 
-//  /products/comment/:id
-//  Private
-//  DELETE Remove product comment
+// http://localhost:5000/products/comment/:id
+// DELETE
+// PRIVATE
+// DELETE COMMENT FROM PRODUCT
 
 router.delete("/comment/:id", (req, res) => {
   let id = req.params.id;

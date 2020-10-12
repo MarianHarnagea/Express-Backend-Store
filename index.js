@@ -29,3 +29,5 @@ mongoose
 
 app.use("/", require("./routes/index"));
 app.use("/products", require("./routes/products"));
+app.use("/auth", require("./routes/auth"));
+app.use("/orders", require("./routes/orders"));
